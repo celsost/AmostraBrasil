@@ -5,12 +5,22 @@ const DEFAULT_N = 50
 const MIN_N = 1
 const MAX_N = 500
 
-export default function TopBar({ onSearch, loading, municipiosOptions = [] }) {
+export default function TopBar({
+  onSearch,
+  onShowMap,
+  onShowData,
+  onExportShp,
+  loading,
+  hasPoints = false,
+  municipiosOptions = [],
+}) {
   const [municipio, setMunicipio] = useState('')
   const [n, setN] = useState(DEFAULT_N)
   const [showSuggestions, setShowSuggestions] = useState(false)
   const [highlightIndex, setHighlightIndex] = useState(-1)
   const [selectedCodibge, setSelectedCodibge] = useState(null)
+  const [selectedUf, setSelectedUf] = useState(null)
+  const [selectedNome, setSelectedNome] = useState(null)
 
   const suggestions = useMemo(() => {
     const query = municipio.trim().toLowerCase()
@@ -29,7 +39,7 @@ export default function TopBar({ onSearch, loading, municipiosOptions = [] }) {
     e.preventDefault()
     const mun = municipio.trim() || 'Brasil'
     const sampleSize = Math.min(MAX_N, Math.max(MIN_N, Number(n) || DEFAULT_N))
-    onSearch(mun, sampleSize, selectedCodibge)
+    onSearch(mun, sampleSize, selectedCodibge, selectedUf, selectedNome)
     setShowSuggestions(false)
     setHighlightIndex(-1)
   }
@@ -37,6 +47,8 @@ export default function TopBar({ onSearch, loading, municipiosOptions = [] }) {
   const handleMunicipioChange = (e) => {
     setMunicipio(e.target.value)
     setSelectedCodibge(null)
+    setSelectedUf(null)
+    setSelectedNome(null)
     setShowSuggestions(true)
     setHighlightIndex(-1)
   }
@@ -45,6 +57,8 @@ export default function TopBar({ onSearch, loading, municipiosOptions = [] }) {
     const label = `${item.municipio} (${item.uf}) - ${item.codibge}`
     setMunicipio(label)
     setSelectedCodibge(item.codibge || null)
+    setSelectedUf(item.uf || null)
+    setSelectedNome(item.municipio || null)
     setShowSuggestions(false)
     setHighlightIndex(-1)
   }
@@ -131,9 +145,36 @@ export default function TopBar({ onSearch, loading, municipiosOptions = [] }) {
               title={`Tamanho da amostra (${MIN_N}–${MAX_N} domicílios)`}
             />
           </label>
-          <button type="submit" className="topbar-btn" disabled={loading}>
-            {loading ? 'Gerando…' : 'Gerar amostra'}
-          </button>
+          <div className="topbar-actions">
+            <button type="submit" className="topbar-btn" disabled={loading}>
+              {loading ? 'Gerando…' : 'Gerar amostra'}
+            </button>
+            <button
+              type="button"
+              className="topbar-btn-secondary"
+              onClick={onShowData}
+              disabled={loading}
+            >
+              Dados
+            </button>
+            <button
+              type="button"
+              className="topbar-btn-secondary"
+              onClick={onShowMap}
+              disabled={loading}
+            >
+              Mapa
+            </button>
+            <button
+              type="button"
+              className="topbar-btn-secondary"
+              onClick={onExportShp}
+              disabled={loading || !hasPoints}
+              title={hasPoints ? 'Baixar shapefile dos pontos amostrados' : 'Gere uma amostra antes'}
+            >
+              Exportar SHP
+            </button>
+          </div>
         </form>
       </div>
     </header>

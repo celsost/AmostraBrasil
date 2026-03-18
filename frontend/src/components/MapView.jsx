@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react'
-import { MapContainer, TileLayer, Marker, Popup, GeoJSON, useMap } from 'react-leaflet'
+import { MapContainer, Marker, Popup, GeoJSON, useMap } from 'react-leaflet'
 import L from 'leaflet'
 import './MapView.css'
 
@@ -16,13 +16,26 @@ if (typeof L !== 'undefined' && L.Icon && L.Icon.Default && L.Icon.Default.proto
 const BRAZIL_CENTER = [-14.24, -51.93]
 const DEFAULT_ZOOM = 4
 
-function FitBounds({ points }) {
+function FitBounds({ points, limitesGeoJson }) {
   const map = useMap()
   useEffect(() => {
-    if (!map || !points || points.length === 0) return
-    const bounds = L.latLngBounds(points.map((p) => [p.lat, p.lng]))
-    map.fitBounds(bounds, { padding: [40, 40], maxZoom: 14 })
-  }, [map, points])
+    if (!map) return
+
+    // Prefer ajustar aos limites do município; se não houver, usa os pontos.
+    if (limitesGeoJson && limitesGeoJson.features && limitesGeoJson.features.length > 0) {
+      const layer = L.geoJSON(limitesGeoJson)
+      const bounds = layer.getBounds()
+      if (bounds.isValid()) {
+        map.fitBounds(bounds, { padding: [40, 40], maxZoom: 14 })
+        return
+      }
+    }
+
+    if (points && points.length > 0) {
+      const bounds = L.latLngBounds(points.map((p) => [p.lat, p.lng]))
+      map.fitBounds(bounds, { padding: [40, 40], maxZoom: 14 })
+    }
+  }, [map, points, limitesGeoJson])
   return null
 }
 
@@ -87,12 +100,8 @@ export default function MapView({ points, municipio, source, limitesGeoJson, ext
         zoom={DEFAULT_ZOOM}
         className="map-container"
         scrollWheelZoom
-        style={{ height: '100%', width: '100%' }}
+        style={{ height: '100%', width: '100%', backgroundColor: '#f5f5f5' }}
       >
-        <TileLayer
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-        />
         {hasLimites && (
           <GeoJSON data={limitesGeoJson} style={LIMITES_STYLE} />
         )}
@@ -113,7 +122,9 @@ export default function MapView({ points, municipio, source, limitesGeoJson, ext
               </Popup>
             </Marker>
           ))}
-        {hasPoints && <FitBounds points={points} />}
+        {(hasPoints || hasLimites) && (
+          <FitBounds points={points} limitesGeoJson={limitesGeoJson} />
+        )}
       </MapContainer>
       {!hasPoints && (
         <div className="map-instruction" aria-hidden="true">
@@ -125,7 +136,6 @@ export default function MapView({ points, municipio, source, limitesGeoJson, ext
           <span className="map-legend-count">{points.length} pontos</span>
           {municipio && <span className="map-legend-mun">{municipio}</span>}
           {source === 'cnefe2022' && <span className="map-legend-source">Fonte: IBGE Censo 2022</span>}
-          {source === 'mock' && <span className="map-legend-source">Dados simulados</span>}
           {hasExtraLayer && (
             <span className="map-legend-extra">Áreas verdes: parques, bosques, mata (Campinas)</span>
           )}

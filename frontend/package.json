@@ -10,10 +10,14 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "fflate": "^0.8.2",
+    "jszip": "^3.10.1",
     "leaflet": "^1.9.4",
+    "papaparse": "^5.4.1",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
-    "react-leaflet": "^4.2.1"
+    "react-leaflet": "^4.2.1",
+    "shp-write": "^0.3.2"
   },
   "devDependencies": {
     "@vitejs/plugin-react": "^4.2.1",

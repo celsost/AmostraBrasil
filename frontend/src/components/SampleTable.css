@@ -1,0 +1,84 @@
+.sample-table-container {
+  position: absolute;
+  inset: 0;
+  overflow: auto;
+  padding: 1rem;
+  background: #f5f5f5;
+}
+
+.sample-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+  background: #fff;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+}
+
+.sample-table th,
+.sample-table td {
+  padding: 0.4rem 0.5rem;
+  border: 1px solid #ddd;
+  text-align: left;
+  vertical-align: top;
+}
+
+/* Column widths: lat/lng estreitas, códigos médios, textos mais largos */
+.sample-table th:nth-child(1),
+.sample-table td:nth-child(1),
+.sample-table th:nth-child(2),
+.sample-table td:nth-child(2) {
+  width: 80px;
+  white-space: nowrap;
+}
+
+.sample-table th:nth-child(3),
+.sample-table td:nth-child(3) {
+  width: 90px;
+  white-space: nowrap;
+}
+
+.sample-table th:nth-child(4),
+.sample-table td:nth-child(4),
+.sample-table th:nth-child(5),
+.sample-table td:nth-child(5) {
+  width: 110px;
+  white-space: nowrap;
+}
+
+.sample-table th:nth-child(6),
+.sample-table td:nth-child(6),
+.sample-table th:nth-child(7),
+.sample-table td:nth-child(7),
+.sample-table th:nth-child(8),
+.sample-table td:nth-child(8) {
+  min-width: 180px;
+}
+
+.sample-table th:nth-child(9),
+.sample-table td:nth-child(9) {
+  width: 110px;
+  white-space: nowrap;
+}
+
+.sample-table th {
+  background: #0d3b2e;
+  color: #f2f2f2;
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+.sample-table tbody tr:nth-child(even) {
+  background: #fafafa;
+}
+
+.sample-table-empty {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  text-align: center;
+  color: #555;
+}

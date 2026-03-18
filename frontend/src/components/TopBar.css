@@ -31,6 +31,15 @@
   flex: 1;
   min-width: 200px;
   max-width: 560px;
+  flex-wrap: nowrap;
+}
+
+.topbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-shrink: 0;
+  flex-wrap: nowrap;
 }
 
 .topbar-input-wrapper {
@@ -173,5 +182,27 @@
 
 .topbar-btn:disabled {
   opacity: 0.8;
+  cursor: not-allowed;
+}
+
+.topbar-btn-secondary {
+  padding: 0.5rem 1rem;
+  font-size: 0.9rem;
+  font-weight: 500;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.topbar-btn-secondary:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.15);
+  border-color: rgba(255, 255, 255, 0.5);
+}
+
+.topbar-btn-secondary:disabled {
+  opacity: 0.6;
   cursor: not-allowed;
 }

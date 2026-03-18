@@ -4,7 +4,6 @@
   "scripts": {
     "install:frontend": "npm install --prefix frontend",
     "start": "npm run start --prefix frontend",
-    "start:api": "powershell -ExecutionPolicy Bypass -File backend/start.ps1",
     "dev": "npm run dev --prefix frontend",
     "build": "npm run build --prefix frontend"
   }

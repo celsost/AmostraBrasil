@@ -1,5 +1,0 @@
-*.zip
-extract/
-__pycache__/
-.venv/
-venv/

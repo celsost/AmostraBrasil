@@ -17,7 +17,7 @@ log = logging.getLogger(__name__)
 
 BASE_URL_2022 = (
     "https://ftp.ibge.gov.br/Cadastro_Nacional_de_Enderecos_para_Fins_Estatisticos/"
-    "Censo_Demografico_2022/Coordenadas_enderecos/Municipio"
+    "Censo_Demografico_2022/Arquivos_CNEFE/CSV/Municipio"
 )
 
 
@@ -26,6 +26,28 @@ def _download_zip(url: str, timeout: int = 120) -> bytes:
     req = urllib.request.Request(url, headers={"User-Agent": "AmostraBrasil-Python/1.0"})
     with urllib.request.urlopen(req, timeout=timeout) as resp:
         return resp.read()
+
+
+def _find_zip_name_for_codibge(folder_url: str, codibge: str) -> str:
+    """
+    List the UF folder HTML and find the ZIP whose name starts with the given codibge.
+
+    IBGE pattern: {codibge}_NOME_MUNICIPIO.csv.zip (or similar).
+    We search for links like 'codibge*.zip' in the index page.
+    """
+    import re
+
+    import requests
+
+    resp = requests.get(folder_url, timeout=60)
+    resp.raise_for_status()
+    html = resp.text
+    # Look for href="<codibge>something.zip"
+    pattern = re.compile(r'href="(?P<name>' + re.escape(codibge) + r'[^"]*\.zip)"', re.IGNORECASE)
+    m = pattern.search(html)
+    if not m:
+        raise ValueError(f"Nenhum arquivo ZIP encontrado para codibge={codibge} em {folder_url}")
+    return m.group("name")
 
 
 def _find_lat_lon_columns(df: pd.DataFrame) -> tuple:
@@ -124,8 +146,10 @@ def fetch_municipio_coords_2022(
     codibge = str(row["CODIBGE"]).zfill(7)
     uf = row["UF"]
     folder = f"{codibge[:2]}_{uf}"
-    url = f"{BASE_URL_2022.rstrip('/')}/{folder}/{codibge}.zip"
-    log.info("cnefe2022: fetching url=%s", url)
+    folder_url = f"{BASE_URL_2022.rstrip('/')}/{folder}/"
+    zip_name = _find_zip_name_for_codibge(folder_url, codibge)
+    url = f"{folder_url}{zip_name}"
+    log.info("cnefe2022: fetching folder=%s zip=%s url=%s", folder_url, zip_name, url)
     zip_bytes = _download_zip(url)
     df = _parse_csv_from_zip(zip_bytes)
     lat_col, lon_col = _find_lat_lon_columns(df)
@@ -137,6 +161,14 @@ def fetch_municipio_coords_2022(
     df = df.dropna(subset=[lat_col, lon_col])
     df[lat_col] = pd.to_numeric(df[lat_col], errors="coerce")
     df[lon_col] = pd.to_numeric(df[lon_col], errors="coerce")
+    # IBGE CNEFE 2022: LATITUDE/LONGITUDE vêm como inteiros em microssegundos de grau.
+    # Ex.: -23567890 -> -23.567890 graus decimais.
+    if lat_col.upper() in {"LATITUDE", "NU_LATITUDE"} and lon_col.upper() in {
+        "LONGITUDE",
+        "NU_LONGITUDE",
+    }:
+        df[lat_col] = df[lat_col] / 1_000_000.0
+        df[lon_col] = df[lon_col] / 1_000_000.0
     df = df.dropna(subset=[lat_col, lon_col])
     if n_sample is not None and n_sample > 0 and len(df) > n_sample:
         df = df.sample(n=n_sample, random_state=42)

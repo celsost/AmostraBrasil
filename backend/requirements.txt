@@ -1,5 +1,0 @@
-# Backend API (run from repo root: pip install -r py/requirements.txt -r backend/requirements.txt)
-fastapi>=0.100.0
-uvicorn[standard]>=0.22.0
-# amostra_brasil deps (if not installed)
--r ../py/requirements.txt
