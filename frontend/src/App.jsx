@@ -5,6 +5,8 @@ import TopBar from './components/TopBar'
 import MapView from './components/MapView'
 import SampleTable from './components/SampleTable'
 import './App.css'
+import { getMunicipioBoundaryGeoJson } from './lib/municipioBoundary'
+import { downloadMunicipioShp } from './lib/exportMunicipioShp'
 
 export default function App() {
   const [points, setPoints] = useState([])
@@ -177,9 +179,20 @@ export default function App() {
         }
         const cod = String(codibge).padStart(7, '0')
         const zipUrl = getZipUrl(cod, uf, nomeMunicipio)
+        // Carrega limites municipais e amostra em paralelo.
+        const limitesPromise = getMunicipioBoundaryGeoJson(cod)
+          .then((fc) => setLimitesGeoJson(fc))
+          .catch((e) => {
+            console.warn('Falha ao carregar limites municipais:', e)
+            setLimitesGeoJson({ type: 'FeatureCollection', features: [] })
+          })
+
         const samplePoints = await fetchZipParseAndSample(zipUrl, n)
         setPoints(samplePoints)
         setSource('cnefe2022')
+
+        // Espera também a conversão dos limites terminar para esconder o "aguarde".
+        await limitesPromise
       } catch (e) {
         setError(e instanceof Error ? e.message : String(e))
         setPoints([])
@@ -190,7 +203,7 @@ export default function App() {
     [hasDownloadConfigured]
   )
 
-  const handleExportShp = useCallback(async () => {
+  const handleExportCsv = useCallback(async () => {
     if (!points.length) return
     setError(null)
 
@@ -255,18 +268,82 @@ export default function App() {
     }
   }, [points, municipio, municipioNomeIBGE, municipioUf, municipioCodibge])
 
+  const handleExportMunicipioShp = useCallback(async () => {
+    if (!municipioCodibge) return
+    setError(null)
+    try {
+      // Reusa os limites já carregados, senão carrega sob demanda.
+      let fc = limitesGeoJson
+      if (!fc || !fc.features || fc.features.length === 0) {
+        const cod = String(municipioCodibge).padStart(7, '0')
+        fc = await getMunicipioBoundaryGeoJson(cod)
+      }
+
+      if (!fc || !fc.features || fc.features.length === 0) {
+        throw new Error('Não foi possível localizar o polígono do município para exportar.')
+      }
+
+      const slug = municipioNomeIBGE
+        ? municipioNomeIBGE
+            .normalize('NFD')
+            .replace(/[\u0300-\u036f]/g, '')
+            .replace(/\s+/g, '_')
+        : municipio
+
+      const uf = municipioUf || 'UF'
+      const cod = String(municipioCodibge).padStart(7, '0')
+      const baseName = `${slug}_${uf}_${cod}`
+
+      let dirHandle = null
+      if (typeof window !== 'undefined' && 'showDirectoryPicker' in window) {
+        try {
+          dirHandle = await window.showDirectoryPicker()
+        } catch (e) {
+          if (e.name !== 'AbortError') throw e
+          dirHandle = null
+        }
+      }
+
+      const result = await downloadMunicipioShp(fc, baseName, dirHandle)
+      if (result?.mode === 'directory') {
+        window.alert(
+          `Arquivos do município gravados na pasta:\n- ${result.files
+            .map((f) => f.name)
+            .join('\n- ')}`
+        )
+      }
+      if (result?.mode === 'downloads') {
+        window.alert(
+          `Foram disparados ${result.files.length} downloads: \n- ${result.files.join('\n- ')}`
+        )
+      }
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Falha ao exportar shapefile do município.')
+    }
+  }, [limitesGeoJson, municipioCodibge, municipioNomeIBGE, municipio, municipioUf])
+
   return (
     <div className="app">
       <TopBar
         onSearch={handleSearch}
         onShowMap={() => setViewMode('map')}
         onShowData={() => setViewMode('table')}
-        onExportShp={handleExportShp}
+        onExportCsv={handleExportCsv}
+        onExportMunicipioShp={handleExportMunicipioShp}
         loading={loading}
         hasPoints={points.length > 0}
+        hasMunicipioSelected={!!municipioCodibge && !!municipioUf && !!municipioNomeIBGE}
         municipiosOptions={municipiosOptions}
       />
       <div className="app-map-rect">
+        {loading && (
+          <div className="importing-overlay" role="status" aria-live="polite">
+            <div className="importing-card">
+              <div className="importing-spinner" aria-hidden="true" />
+              <div className="importing-text">Aguarde… importando dados</div>
+            </div>
+          </div>
+        )}
         {error && (
           <div className="app-error" role="alert">
             <strong>Erro ao obter amostra de domicílios:</strong>{' '}

@@ -9,9 +9,11 @@ export default function TopBar({
   onSearch,
   onShowMap,
   onShowData,
-  onExportShp,
+  onExportCsv,
+  onExportMunicipioShp,
   loading,
   hasPoints = false,
+  hasMunicipioSelected = false,
   municipiosOptions = [],
 }) {
   const [municipio, setMunicipio] = useState('')
@@ -168,9 +170,18 @@ export default function TopBar({
             <button
               type="button"
               className="topbar-btn-secondary"
-              onClick={onExportShp}
+              onClick={onExportCsv}
               disabled={loading || !hasPoints}
-              title={hasPoints ? 'Baixar shapefile dos pontos amostrados' : 'Gere uma amostra antes'}
+              title={hasPoints ? 'Baixar CSV com os pontos amostrados' : 'Gere uma amostra antes'}
+            >
+              {loading ? 'Exportando…' : 'Exportar CSV'}
+            </button>
+            <button
+              type="button"
+              className="topbar-btn-secondary"
+              onClick={onExportMunicipioShp}
+              disabled={loading || !hasMunicipioSelected}
+              title={hasMunicipioSelected ? 'Baixar SHP do polígono do município selecionado' : 'Selecione um município na lista'}
             >
               Exportar SHP
             </button>
